@@ -1,0 +1,1 @@
+"""FlowMind backend application package."""

@@ -1,0 +1,40 @@
+# --- Python / backend ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+backend/.env
+backend/dist/
+
+# --- Node / frontend ---
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env*.local
+frontend/next-env.d.ts
+frontend/coverage/
+
+# --- Docker / infra ---
+*.pid
+.docker/
+postgres-data/
+qdrant-data/
+redis-data/
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# --- Env ---
+.env
+!*.env.example
