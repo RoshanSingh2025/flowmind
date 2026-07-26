@@ -87,7 +87,7 @@ export function Architecture() {
 
         <div className="glass-panel mt-16 flex flex-col gap-6 rounded-2xl p-8 md:flex-row md:items-center md:justify-between">
           <div>
-            <Badge variant="outline">Today's foundation</Badge>
+            <Badge variant="outline">Today&apos;s foundation</Badge>
             <p className="mt-3 max-w-md text-sm text-muted">
               This delivery ships stages 01 and the surrounding infrastructure — API, database,
               queues, and vector store are wired and ready. Stages 02–05 are the next phase.

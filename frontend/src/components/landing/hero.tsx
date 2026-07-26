@@ -1,90 +1,122 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Circle, PlayCircle } from "lucide-react";
+import { ArrowRight, Bot, MessagesSquare, PlayCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-const FILMSTRIP_FRAMES = [0, 1, 2, 3];
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+};
 
-const DOC_LINES = [
-  { width: "w-4/5", delay: 0 },
-  { width: "w-full", delay: 0.08 },
-  { width: "w-3/5", delay: 0.16 },
-  { width: "w-2/3", delay: 0.24 },
-];
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
+};
+
+/** Short animated connector between two pipeline stages. Rotates to vertical on mobile. */
+function StageConnector() {
+  return (
+    <div className="relative h-10 w-8 shrink-0 rotate-90 md:h-px md:w-12 md:rotate-0 lg:w-16">
+      <svg viewBox="0 0 100 20" className="h-full w-full" preserveAspectRatio="none">
+        <path
+          d="M0 10 L100 10"
+          stroke="hsl(var(--border) / 0.25)"
+          strokeWidth="2"
+          strokeDasharray="5 5"
+          fill="none"
+        />
+      </svg>
+      <motion.span
+        className="glow-dot absolute top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-teal text-teal"
+        animate={{ left: ["0%", "94%"] }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+      />
+    </div>
+  );
+}
 
 /**
- * Signature element: a filmstrip (the raw recording, indigo) resolves into a
- * structured document (the generated output, teal) along a connecting beam.
- * This is the one motif the whole page is built around — it literally is the
- * product's core transformation, not a decorative flourish.
+ * The complete product journey, compressed into three stages: a raw
+ * recording is *understood* by an agent pipeline, then resolved into an
+ * answerable knowledge base. This is deliberately three stages, not two —
+ * the "answer" stage is the actual payoff and was previously missing
+ * entirely from the hero.
  */
-function RecordingToDocVisual() {
+function PipelineVisual() {
   return (
-    <div className="relative flex items-center gap-6">
-      {/* Filmstrip — raw input */}
-      <div className="flex flex-col gap-2">
-        {FILMSTRIP_FRAMES.map((frame) => (
-          <motion.div
-            key={frame}
-            initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: [0.5, 1, 0.5], x: 0 }}
-            transition={{
-              opacity: { duration: 2.4, repeat: Infinity, delay: frame * 0.3 },
-              x: { duration: 0.5, delay: frame * 0.1 },
-            }}
-            className="relative flex h-12 w-16 items-center justify-center rounded-md border border-indigo/25 bg-indigo/[0.07]"
-          >
-            <PlayCircle className="h-4 w-4 text-indigo/70" strokeWidth={1.75} />
-            <span className="absolute -left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-background ring-1 ring-indigo/40" />
-          </motion.div>
-        ))}
+    <div className="flex flex-col items-center gap-3 md:flex-row md:items-start md:gap-0">
+      {/* Stage 1 — Record */}
+      <div className="flex flex-col items-center gap-3">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="relative flex h-16 w-16 items-center justify-center rounded-xl border border-indigo/25 bg-indigo/[0.07]"
+        >
+          <PlayCircle className="h-6 w-6 text-indigo/80" strokeWidth={1.75} />
+          <span className="glow-dot absolute -right-1 -top-1 h-2 w-2 animate-pulse-slow rounded-full bg-indigo text-indigo" />
+        </motion.div>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-muted">Record</span>
       </div>
 
-      {/* Connecting beam */}
-      <div className="relative h-40 w-16 shrink-0 md:w-24">
-        <svg viewBox="0 0 100 160" className="h-full w-full" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="hsl(var(--accent-indigo))" />
-              <stop offset="100%" stopColor="hsl(var(--accent-teal))" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M0 80 C 40 80, 60 80, 100 80"
-            stroke="url(#beam)"
-            strokeWidth="2"
-            strokeDasharray="6 6"
-            fill="none"
-            opacity={0.6}
-          />
-        </svg>
-        <motion.span
-          className="glow-dot absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-teal text-teal"
-          animate={{ left: ["0%", "92%"] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        />
+      <StageConnector />
+
+      {/* Stage 2 — Understand */}
+      <div className="flex flex-col items-center gap-3">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="relative flex h-16 w-16 items-center justify-center rounded-xl border border-border/15 bg-white/[0.03]"
+        >
+          <Bot className="h-6 w-6 text-foreground/70" strokeWidth={1.75} />
+          <div className="absolute -bottom-1.5 flex gap-0.5">
+            {[0, 1, 2].map((dot) => (
+              <span
+                key={dot}
+                style={{ animationDelay: `${dot * 0.3}s` }}
+                className="h-1 w-1 animate-pulse-slow rounded-full bg-foreground/40"
+              />
+            ))}
+          </div>
+        </motion.div>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-muted">
+          Understand
+        </span>
       </div>
 
-      {/* Generated document — structured output */}
-      <div className="flex w-48 flex-col gap-2.5 rounded-xl border border-teal/25 bg-teal/[0.06] p-4">
-        <div className="mb-1 flex items-center gap-1.5">
-          <Circle className="h-2 w-2 fill-teal text-teal" />
-          <span className="font-mono text-[10px] uppercase tracking-wider text-teal/80">
-            Doc generated
-          </span>
-        </div>
-        {DOC_LINES.map((line, i) => (
-          <motion.div
-            key={i}
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 + line.delay, ease: "easeOut" }}
-            style={{ transformOrigin: "left" }}
-            className={`h-2 ${line.width} rounded-full bg-teal/25`}
-          />
-        ))}
+      <StageConnector />
+
+      {/* Stage 3 — Answer: the payoff, so it gets the richest treatment */}
+      <div className="flex flex-col items-center gap-3">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex w-56 flex-col gap-3 rounded-xl border border-teal/25 bg-teal/[0.06] p-4"
+        >
+          <div className="flex items-center gap-1.5">
+            <MessagesSquare className="h-3.5 w-3.5 text-teal" strokeWidth={2} />
+            <span className="font-mono text-[10px] uppercase tracking-wider text-teal/80">
+              Knowledge base
+            </span>
+          </div>
+          <div className="rounded-full bg-white/5 px-3 py-1.5 text-left text-xs text-foreground">
+             &ldquo;How do I reset a password?&rdquo;
+          </div>
+          <div className="space-y-1.5 pl-1">
+            <div className="h-1.5 w-full rounded-full bg-teal/25" />
+            <div className="h-1.5 w-3/5 rounded-full bg-teal/15" />
+          </div>
+        </motion.div>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-muted">Answer</span>
       </div>
     </div>
   );
@@ -92,15 +124,19 @@ function RecordingToDocVisual() {
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pb-28 pt-40 md:pt-48">
+    <section className="relative overflow-hidden pb-24 pt-36 md:pb-32 md:pt-48">
       <div className="grid-overlay bg-mesh-glow absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]" />
 
-      <div className="container flex flex-col items-center text-center">
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={containerVariants}
+        className="container flex flex-col items-center text-center"
+      >
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="glass-panel mb-8 inline-flex items-center gap-2 rounded-full px-4 py-1.5"
+          variants={itemVariants}
+          whileHover={{ scale: 1.03 }}
+          className="glass-panel mb-8 inline-flex items-center gap-2 rounded-full px-4 py-1.5 transition-shadow hover:shadow-[0_0_24px_-8px_hsl(var(--accent-teal)/0.5)]"
         >
           <span className="h-1.5 w-1.5 animate-pulse-slow rounded-full bg-teal" />
           <span className="text-xs font-medium text-muted">
@@ -109,48 +145,50 @@ export function Hero() {
         </motion.div>
 
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="max-w-3xl font-display text-4xl font-semibold leading-[1.1] tracking-tight md:text-6xl"
+          variants={itemVariants}
+          className="max-w-4xl text-balance font-display text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl"
         >
-          Every screen recording is <span className="text-gradient">undocumented knowledge.</span>
+          Screens recorded. Knowledge captured.{" "}
+          <span className="text-gradient">Questions answered.</span>
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-6 max-w-xl text-balance text-base text-muted md:text-lg"
+          variants={itemVariants}
+          className="mt-6 max-w-xl text-balance text-base leading-relaxed text-muted md:text-lg"
         >
-          FlowMind watches how your product actually gets used and turns that footage into
-          documentation, FAQs, onboarding guides, and a knowledge base your team can ask questions
-          against.
+          FlowMind watches how your product gets used, then turns that footage into
+          documentation, FAQs, and a knowledge base your team can query directly.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-10 flex flex-col gap-3 sm:flex-row"
+          variants={itemVariants}
+          className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:gap-6"
         >
-          <Button size="lg">
-            Get early access <ArrowRight className="h-4 w-4" />
-          </Button>
-          <Button size="lg" variant="outline">
-            Watch a 90s demo
-          </Button>
+          <Button size="lg" className="w-full sm:w-auto">
+  Get early access
+  <ArrowRight className="h-4 w-4" />
+</Button>
+
+<a
+  href="#demo"
+  className="group inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-foreground"
+>
+  <PlayCircle className="h-4 w-4 text-indigo transition-transform group-hover:scale-110" />
+  Watch a 90s demo
+</a>
         </motion.div>
 
+        <motion.p variants={itemVariants} className="mt-4 text-xs text-muted/70">
+          Free during the design-partner phase · No credit card required
+        </motion.p>
+
         <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}
-          className="glass-panel mt-20 hidden rounded-2xl p-8 md:block"
+          variants={itemVariants}
+          className="glass-panel mt-16 w-full max-w-fit rounded-2xl p-6 md:mt-20 md:p-8"
         >
-          <RecordingToDocVisual />
+          <PipelineVisual />
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   );
 }

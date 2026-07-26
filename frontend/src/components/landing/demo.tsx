@@ -73,11 +73,11 @@ function DemoContent({ view }: { view: DemoView }) {
   return (
     <div className="flex h-72 flex-col justify-end gap-3 rounded-xl border border-border/10 bg-white/[0.02] p-6">
       <div className="self-end rounded-2xl rounded-br-sm bg-indigo/15 px-4 py-2 text-sm text-foreground">
-        How do I reset a user's password?
+        How do I reset a user&apos;s password?
       </div>
       <div className="self-start rounded-2xl rounded-bl-sm bg-white/5 px-4 py-2 text-sm text-muted">
         Open <span className="text-foreground">Settings → Members</span>, select the user, and
-        choose <span className="text-foreground">"Send reset link."</span> Sourced from the
+        choose <span className="text-foreground">&ldquo;Send reset link.&rdquo;</span> Sourced from the
         onboarding recording, step 4.
       </div>
     </div>
