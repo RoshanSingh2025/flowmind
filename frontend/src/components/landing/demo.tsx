@@ -17,23 +17,28 @@ function StatusIndicator() {
 
   if (isLoading) {
     return (
-      <span className="flex items-center gap-1.5 font-mono text-[11px] text-muted">
-        <Loader2 className="h-3 w-3 animate-spin" /> checking api…
+      <span className="flex min-w-0 items-center gap-1.5 font-mono text-[11px] text-muted">
+        <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+        <span className="truncate">checking api…</span>
       </span>
     );
   }
 
   if (isError || !data) {
     return (
-      <span className="flex items-center gap-1.5 font-mono text-[11px] text-muted">
-        <XCircle className="h-3 w-3" /> api offline (start the backend to see live status)
+      <span className="flex min-w-0 items-center gap-1.5 font-mono text-[11px] text-muted">
+        <XCircle className="h-3 w-3 shrink-0" />
+        <span className="truncate">api offline (start the backend to see live status)</span>
       </span>
     );
   }
 
   return (
-    <span className="flex items-center gap-1.5 font-mono text-[11px] text-teal">
-      <CheckCircle2 className="h-3 w-3" /> api {data.status} · {data.environment}
+    <span className="flex min-w-0 items-center gap-1.5 font-mono text-[11px] text-teal">
+      <CheckCircle2 className="h-3 w-3 shrink-0" />
+      <span className="truncate">
+        api {data.status} · {data.environment}
+      </span>
     </span>
   );
 }
@@ -44,7 +49,7 @@ function DemoContent({ view }: { view: DemoView }) {
       <div className="flex h-72 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/20 bg-white/[0.02]">
         <Upload className="h-8 w-8 text-indigo" strokeWidth={1.5} />
         <p className="text-sm text-muted">Drop a screen recording, or click to browse</p>
-        <p className="font-mono text-[11px] text-muted/70">.mp4 · .mov · .webm · .mkv</p>
+        <p className="font-mono text-[11px] text-muted/70">.mp4 only</p>
       </div>
     );
   }
@@ -117,12 +122,14 @@ export function Demo() {
             <StatusIndicator />
           </div>
 
-          <div className="flex gap-1 border-b border-border/10 px-4 pb-3">
+          <div
+            className="flex gap-1 overflow-x-auto border-b border-border/10 px-4 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveDemoView(tab.id)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   activeDemoView === tab.id
                     ? "bg-white/[0.06] text-foreground"
                     : "text-muted hover:text-foreground"

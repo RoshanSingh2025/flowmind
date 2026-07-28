@@ -60,7 +60,7 @@ export function Architecture() {
           {/* connecting line, desktop only */}
           <div className="absolute left-0 right-0 top-9 hidden h-px bg-gradient-to-r from-indigo/40 via-teal/40 to-indigo/40 lg:block" />
 
-          <div className="grid gap-6 lg:grid-cols-5">
+          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             {PIPELINE.map((stage, index) => (
               <motion.div
                 key={stage.step}
