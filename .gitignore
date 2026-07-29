@@ -41,3 +41,10 @@ redis-data/
 
 *.zip
 *.tsbuildinfo
+backend/flowmind.db
+backend/storage/
+
+*.zip
+*.tsbuildinfo
+backend/flowmind.db
+backend/storage/
