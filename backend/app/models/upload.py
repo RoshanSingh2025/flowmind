@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import enum
 
-from sqlalchemy import BigInteger, Enum, String
+from sqlalchemy import BigInteger, Enum, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -55,6 +55,15 @@ class Upload(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=UploadStatus.UPLOADED,
         nullable=False,
     )
+
+    duration: Mapped[float | None] = mapped_column(Float, nullable=True)
+    width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fps: Mapped[float | None] = mapped_column(Float, nullable=True)
+    codec: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    bitrate: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    container_format: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    thumbnail_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
         return (

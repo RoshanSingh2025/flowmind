@@ -6,10 +6,8 @@ This is the **first stage** of the FlowMind pipeline:
            -> Workflow Graph -> Documentation -> RAG
 
 Its single responsibility is: validate the incoming video, stream it to
-`storage/uploads/`, compute its checksum, and record its metadata. No
-processing happens here — later stages will read the file this service wrote
-(located deterministically via `upload_id`) and drive `status` forward; this
-service only ever writes `UploadStatus.UPLOADED`.
+`storage/uploads/`, compute its checksum, extract technical metadata,
+generate a thumbnail, and record everything in the database.
 """
 
 from __future__ import annotations
@@ -24,6 +22,13 @@ from app.core.logging import get_logger
 from app.models.upload import Upload, UploadStatus
 from app.repositories.upload_repository import UploadRepository
 from app.schemas.upload import UploadCreateResponse, UploadRead
+from app.utils.ffmpeg import (
+    FFmpegError,
+    FFprobeError,
+    generate_thumbnail,
+    probe_video,
+    select_thumbnail_timestamp,
+)
 from app.utils.files import (
     build_storage_path,
     file_extension_allowed,
@@ -46,21 +51,30 @@ class UploadService:
         content_type: str,
         chunks: AsyncIterator[bytes],
     ) -> UploadCreateResponse:
-        """Validate, persist to disk, checksum, and record a new upload.
+        """Validate, save, extract metadata, generate thumbnail, and record upload."""
 
-        Raises:
-            UnsupportedFileTypeError: extension or declared content-type isn't MP4.
-            FileTooLargeError: the stream exceeds `settings.max_upload_size_mb`
-                (raised by `save_upload_stream`, propagated unchanged).
-        """
-        self._validate_file_type(filename=filename, content_type=content_type)
+        self._validate_file_type(
+            filename=filename,
+            content_type=content_type,
+        )
 
         upload_id = uuid.uuid4()
+
         extension = Path(filename).suffix.lower()
-        destination = build_storage_path(self._settings.upload_dir, upload_id, extension)
+
+        destination = build_storage_path(
+            self._settings.upload_dir,
+            upload_id,
+            extension,
+        )
+
         max_bytes = self._settings.max_upload_size_mb * 1024 * 1024
 
-        saved_file = await save_upload_stream(destination, chunks, max_bytes=max_bytes)
+        saved_file = await save_upload_stream(
+            destination,
+            chunks,
+            max_bytes=max_bytes,
+        )
 
         upload = Upload(
             id=upload_id,
@@ -71,6 +85,7 @@ class UploadService:
             checksum=saved_file.checksum,
             status=UploadStatus.UPLOADED,
         )
+
         upload = await self._repository.add(upload)
 
         logger.info(
@@ -81,19 +96,87 @@ class UploadService:
             checksum=saved_file.checksum,
         )
 
-        return UploadCreateResponse(upload_id=upload.id, status=upload.status)
+        # -------------------------------------------------------
+        # Extract metadata + generate thumbnail
+        # -------------------------------------------------------
 
-    async def get_upload(self, upload_id: uuid.UUID) -> UploadRead | None:
+        try:
+            metadata = await probe_video(destination)
+
+            thumbnail_path = (
+                Path(self._settings.upload_dir)
+                / "thumbnails"
+                / f"{upload.id}.jpg"
+            )
+
+            timestamp = select_thumbnail_timestamp(
+                metadata.duration or 0.0
+            )
+
+            await generate_thumbnail(
+                destination,
+                thumbnail_path,
+                timestamp,
+            )
+
+            upload.duration = metadata.duration
+            upload.width = metadata.width
+            upload.height = metadata.height
+            upload.fps = metadata.fps
+            upload.codec = metadata.codec
+            upload.bitrate = metadata.bitrate
+            upload.container_format = metadata.container_format
+            upload.thumbnail_path = str(thumbnail_path)
+
+            await self._repository.add(upload)
+
+            logger.info(
+                "upload_metadata_extracted",
+                upload_id=str(upload.id),
+                duration=metadata.duration,
+                width=metadata.width,
+                height=metadata.height,
+                codec=metadata.codec,
+            )
+
+        except (FFprobeError, FFmpegError) as exc:
+            logger.exception(
+                "upload_metadata_failed",
+                upload_id=str(upload.id),
+                error=str(exc),
+            )
+
+        return UploadCreateResponse(
+            upload_id=upload.id,
+            status=upload.status,
+        )
+
+    async def get_upload(
+        self,
+        upload_id: uuid.UUID,
+    ) -> UploadRead | None:
         upload = await self._repository.get_by_id(upload_id)
         return UploadRead.model_validate(upload) if upload else None
 
-    def _validate_file_type(self, *, filename: str, content_type: str) -> None:
-        if not file_extension_allowed(filename, self._settings.allowed_upload_extensions):
+    def _validate_file_type(
+        self,
+        *,
+        filename: str,
+        content_type: str,
+    ) -> None:
+        if not file_extension_allowed(
+            filename,
+            self._settings.allowed_upload_extensions,
+        ):
             raise UnsupportedFileTypeError(
                 "Only MP4 files are supported. Allowed extensions: "
                 f"{', '.join(self._settings.allowed_upload_extensions)}"
             )
-        if not mime_type_allowed(content_type, self._settings.allowed_upload_mime_types):
+
+        if not mime_type_allowed(
+            content_type,
+            self._settings.allowed_upload_mime_types,
+        ):
             raise UnsupportedFileTypeError(
                 "Only MP4 files are supported. Allowed content types: "
                 f"{', '.join(self._settings.allowed_upload_mime_types)}"

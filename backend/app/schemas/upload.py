@@ -40,3 +40,22 @@ class UploadRead(BaseModel):
     checksum: str
     status: UploadStatus
     created_at: datetime
+
+    # --- Technical metadata (populated by ffprobe during upload) ---
+    # All optional: `None` until metadata extraction succeeds, and remains
+    # `None` forever for uploads where it failed (see
+    # `UploadService.create_upload`'s `except (FFprobeError, FFmpegError)`
+    # handling, which logs and continues rather than failing the upload).
+    duration: float | None = None
+    width: int | None = None
+    height: int | None = None
+    fps: float | None = None
+    codec: str | None = None
+    bitrate: int | None = None
+    container_format: str | None = None
+
+    # Raw server-side filesystem path — NOT a loadable URL. There is
+    # currently no static mount or route that serves this file over HTTP;
+    # exposing the path here is harmless (useful for debugging/future wiring)
+    # but a frontend client cannot use this directly as an <img src>.
+    thumbnail_path: str | None = None

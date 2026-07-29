@@ -38,3 +38,6 @@ redis-data/
 # --- Env ---
 .env
 !*.env.example
+
+*.zip
+*.tsbuildinfo

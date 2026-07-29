@@ -26,14 +26,25 @@ logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    import asyncio
+
+    loop = asyncio.get_running_loop()
+
+    logger.info(
+        "event_loop",
+        loop_type=type(loop).__name__,
+        loop_module=type(loop).__module__,
+    )
+
     logger.info(
         "application_startup",
         environment=settings.environment.value,
         version=settings.version,
     )
-    yield
-    logger.info("application_shutdown")
 
+    yield
+
+    logger.info("application_shutdown")
 
 def create_app() -> FastAPI:
     app = FastAPI(

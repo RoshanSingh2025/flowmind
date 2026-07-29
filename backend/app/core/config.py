@@ -43,20 +43,18 @@ class Settings(BaseSettings):
     secret_key: str = Field(default="dev-only-insecure-secret-key")
 
     # --- CORS ---
-    backend_cors_origins: list[AnyHttpUrl] | list[str] = ["http://localhost:3000"]
+    backend_cors_origins: list[AnyHttpUrl] | list[str] = [
+        "http://localhost:3000"
+    ]
 
     # --- Database ---
-    # Defaults to a local SQLite file for zero-setup local development.
-    # Point DATABASE_URL at Postgres (postgresql+asyncpg://...) for
-    # staging/production via the environment or .env file — no code change
-    # needed, since SQLAlchemy resolves the driver from the URL scheme.
     database_url: str = "sqlite+aiosqlite:///./flowmind.db"
     database_echo: bool = False
 
     # --- Redis ---
     redis_url: str = "redis://localhost:6379/0"
 
-    # --- Qdrant (reserved for AI phase) ---
+    # --- Qdrant ---
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str | None = None
 
@@ -65,23 +63,27 @@ class Settings(BaseSettings):
     log_json: bool = True
 
     # --- Uploads ---
-    # This is the first stage of the FlowMind processing pipeline (frame
-    # extraction, audio extraction, OCR, transcription, workflow graph, docs,
-    # and RAG all read from `upload_dir` in later phases), so these values are
-    # intentionally centralized here rather than hardcoded in the service.
     upload_dir: str = "./storage/uploads"
     max_upload_size_mb: int = 500
     allowed_upload_extensions: list[str] = [".mp4"]
     allowed_upload_mime_types: list[str] = ["video/mp4"]
 
+    # --- FFmpeg ---
+    ffmpeg_path: str = "ffmpeg"
+    ffprobe_path: str = "ffprobe"
+    ffmpeg_timeout: int = 30
+
     @field_validator("backend_cors_origins", mode="before")
     @classmethod
     def _split_cors_origins(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str) and not value.startswith("["):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
+            return [
+                origin.strip()
+                for origin in value.split(",")
+                if origin.strip()
+            ]
         return value
 
-    # --- Derived / environment-aware properties ---
     @property
     def is_production(self) -> bool:
         return self.environment == Environment.PRODUCTION
@@ -96,7 +98,6 @@ class Settings(BaseSettings):
 
     @property
     def docs_url(self) -> str | None:
-        """Disable interactive API docs in production."""
         return None if self.is_production else "/docs"
 
     @property
@@ -110,5 +111,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Return a cached Settings instance (singleton for the process lifetime)."""
     return Settings()
