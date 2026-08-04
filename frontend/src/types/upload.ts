@@ -46,6 +46,25 @@ export interface UploadRead {
    * cannot be used directly as an `<img src>` yet.
    */
   thumbnail_path: string | null;
+
+  /**
+   * Pipeline outputs, populated by the background processing pipeline.
+   * All `null` until `status` reaches "completed" (or forever on "failed").
+   */
+  transcript: string | null;
+  documentation_markdown: string | null;
+  sop_markdown: string | null;
+  faq_markdown: string | null;
+  summary_markdown: string | null;
+  processing_error: string | null;
+}
+
+/** Response body of `GET /api/v1/uploads` (paginated list, newest first). */
+export interface UploadListResponse {
+  items: UploadRead[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 /** The error envelope every FlowMind API error responds with (see
@@ -57,6 +76,19 @@ export interface ApiErrorBody {
     request_id: string | null;
     details?: unknown;
   };
+}
+
+/** Response body of `GET /api/v1/uploads/{upload_id}/results` (see `ResultsResponse`). */
+export interface ResultsResponse {
+  upload_id: string;
+  status: UploadStatus;
+  original_filename: string;
+  transcript: string | null;
+  documentation: string | null;
+  sop: string | null;
+  faq: string | null;
+  summary: string | null;
+  error: string | null;
 }
 
 /**

@@ -59,3 +59,38 @@ class UploadRead(BaseModel):
     # exposing the path here is harmless (useful for debugging/future wiring)
     # but a frontend client cannot use this directly as an <img src>.
     thumbnail_path: str | None = None
+
+    # --- Pipeline outputs (populated by the background processing pipeline) ---
+    transcript: str | None = None
+    documentation_markdown: str | None = None
+    sop_markdown: str | None = None
+    faq_markdown: str | None = None
+    summary_markdown: str | None = None
+    processing_error: str | None = None
+
+
+class UploadListResponse(BaseModel):
+    """Response returned by `GET /api/v1/uploads` (paginated)."""
+
+    items: list[UploadRead]
+    total: int
+    limit: int
+    offset: int
+
+
+class ResultsResponse(BaseModel):
+    """Response returned by `GET /api/v1/uploads/{upload_id}/results`.
+
+    A thin, purpose-built projection of `UploadRead` for the Results page —
+    only the fields a results view actually needs.
+    """
+
+    upload_id: uuid.UUID
+    status: UploadStatus
+    original_filename: str
+    transcript: str | None
+    documentation: str | None
+    sop: str | None
+    faq: str | None
+    summary: str | None
+    error: str | None

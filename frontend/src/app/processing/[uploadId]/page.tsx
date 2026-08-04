@@ -5,25 +5,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { useUploadStatus } from "@/hooks/use-upload-status";
+import { formatBytes } from "@/lib/utils";
 
 const PIPELINE_STEPS = [
   { label: "Upload", active: false, built: true },
   { label: "Processing", active: true, built: true },
-  { label: "Results", active: false, built: false },
-  { label: "Dashboard", active: false, built: false },
+  { label: "Results", active: false, built: true },
+  { label: "Dashboard", active: false, built: true },
 ];
-
-function formatBytes(bytes: number): string {
-  if (bytes <= 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  let size = bytes;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex += 1;
-  }
-  return `${size.toFixed(size < 10 && unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
-}
 
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -59,9 +48,14 @@ export default function ProcessingPage() {
           </span>
           FlowMind
         </Link>
-        <Link href="/upload" className="text-sm text-muted transition-colors hover:text-foreground">
-          Upload another
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link href="/dashboard" className="text-sm text-muted transition-colors hover:text-foreground">
+            Dashboard
+          </Link>
+          <Link href="/upload" className="text-sm text-muted transition-colors hover:text-foreground">
+            Upload another
+          </Link>
+        </div>
       </header>
 
       <div className="container flex flex-col items-center pb-24 pt-12 text-center">
@@ -146,9 +140,35 @@ export default function ProcessingPage() {
 
               {data.status === "uploaded" && (
                 <p className="max-w-sm text-xs text-muted/70">
-                  Stored and validated. The processing pipeline (transcription, doc generation,
-                  and the knowledge base) isn&apos;t built on the backend yet, so this stays at
-                  &ldquo;uploaded&rdquo; — this page reflects the real status, not a simulation.
+                  Stored and validated. Queued for processing — this will move to
+                  &ldquo;processing&rdquo; shortly.
+                </p>
+              )}
+
+              {data.status === "processing" && (
+                <p className="max-w-sm text-xs text-muted/70">
+                  Extracting audio, transcribing, and generating documentation now. This can take
+                  a minute or two depending on recording length.
+                </p>
+              )}
+
+              {data.status === "completed" && (
+                <>
+                  <p className="max-w-sm text-xs text-muted/70">
+                    Documentation, SOP, FAQ, and summary have been generated.
+                  </p>
+                  <Link
+                    href={`/results/${uploadId}`}
+                    className="rounded-lg bg-gradient-to-r from-indigo to-teal px-4 py-2 text-sm font-medium text-background"
+                  >
+                    View results
+                  </Link>
+                </>
+              )}
+
+              {data.status === "failed" && (
+                <p className="max-w-sm text-xs text-red-400">
+                  {data.processing_error ?? "Processing failed for an unknown reason."}
                 </p>
               )}
 

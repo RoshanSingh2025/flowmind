@@ -7,6 +7,19 @@ fresh, isolated app instances instead of importing a module-level singleton.
 
 from __future__ import annotations
 
+import asyncio
+import sys
+
+# Windows only: SelectorEventLoop (which asyncio can default to depending on
+# how the process is started, e.g. under uvicorn --reload) does not support
+# subprocesses at all (asyncio.create_subprocess_exec raises
+# NotImplementedError). ffmpeg.py's probe_video/generate_thumbnail/
+# extract_audio all shell out via subprocesses, so this must be
+# ProactorEventLoop on Windows. Set before anything else runs, since the
+# policy has to be in place before uvicorn creates its event loop.
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 

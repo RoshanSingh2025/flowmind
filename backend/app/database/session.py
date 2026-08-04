@@ -10,7 +10,12 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.core.config import get_settings
 
@@ -41,3 +46,12 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+
+def get_session_factory() -> async_sessionmaker[AsyncSession]:
+    """The raw session factory (not a session) — for code that needs to open
+    its own session outside the request lifecycle, e.g. a `BackgroundTasks`
+    job that outlives the request. Exposed as its own dependency (rather
+    than importing `AsyncSessionLocal` directly) so tests can override it to
+    point at the same test database as the request path."""
+    return AsyncSessionLocal

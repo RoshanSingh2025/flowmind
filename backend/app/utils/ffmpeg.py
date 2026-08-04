@@ -26,6 +26,7 @@ __all__ = [
     "probe_video",
     "generate_thumbnail",
     "select_thumbnail_timestamp",
+    "extract_audio",
 ]
 
 _THUMBNAIL_TARGET_WIDTH = 640
@@ -170,6 +171,55 @@ async def generate_thumbnail(video_path: Path, output_path: Path, timestamp: flo
         )
 
 
+async def extract_audio(video_path: Path, output_path: Path) -> None:
+    """Extract the audio track from a video as 16kHz mono WAV (faster-whisper's
+    expected input format), using ffmpeg.
+
+    `output_path`'s parent directory is created if it doesn't already exist,
+    and any existing file at `output_path` is overwritten.
+
+    Args:
+        video_path: Path to the source video file.
+        output_path: Path the extracted audio should be written to (e.g. a
+            `.wav` file).
+
+    Raises:
+        FFmpegError: `video_path` does not exist, `ffmpeg` is not
+            installed/found at `settings.ffmpeg_path`, the process times
+            out, exits with a non-zero return code (e.g. the video has no
+            audio track), or does not produce a file at `output_path`.
+    """
+    _ensure_file_exists(video_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    command = [
+        settings.ffmpeg_path,
+        "-y",
+        "-i",
+        str(video_path),
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-acodec",
+        "pcm_s16le",
+        str(output_path),
+    ]
+
+    await _run_subprocess(
+        command,
+        error_type=FFmpegError,
+        binary_name="ffmpeg",
+        timeout_message=f"ffmpeg timed out while extracting audio from {video_path}",
+    )
+
+    if not output_path.exists():
+        raise FFmpegError(
+            f"ffmpeg reported success but no audio file was produced at {output_path}"
+        )
+
+
 def _ensure_file_exists(path: Path) -> None:
     """Raise a `FFprobeError`/`FFmpegError`-agnostic check that `path` exists.
 
@@ -191,7 +241,16 @@ async def _run_subprocess(
     binary_name: str,
     timeout_message: str,
 ) -> bytes:
-    """Run `command` asynchronously and return its stdout on success.
+    """Run `command` and return its stdout on success.
+
+    Uses `subprocess.run` in a worker thread (via `asyncio.to_thread`) rather
+    than `asyncio.create_subprocess_exec`. The latter requires the active
+    event loop to support subprocesses — on Windows, `SelectorEventLoop`
+    does not (raises `NotImplementedError`), and which loop is active can
+    end up outside this app's control (e.g. uvicorn's `--reload` supervisor
+    resets the loop policy after app import, regardless of `--loop` flags
+    or policy set at startup). Plain `subprocess.run` has no such
+    dependency, so this works identically under any event loop, on any OS.
 
     Args:
         command: The full command (binary + arguments) to execute.
@@ -209,27 +268,29 @@ async def _run_subprocess(
         error_type: the configured binary can't be found/executed, the
             process times out, or it exits with a non-zero return code.
     """
+    import subprocess
+
+    def _run() -> subprocess.CompletedProcess[bytes]:
+        return subprocess.run(  # noqa: S603 - command list is built internally, not from user input
+            command,
+            capture_output=True,
+            timeout=settings.ffmpeg_timeout,
+        )
+
     try:
-        process = await asyncio.create_subprocess_exec(
-            *command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await asyncio.wait_for(
-            process.communicate(), timeout=settings.ffmpeg_timeout
-        )
+        result = await asyncio.to_thread(_run)
     except FileNotFoundError as exc:
         raise error_type(f"{binary_name} binary not found: {command[0]!r}") from exc
-    except TimeoutError as exc:
+    except subprocess.TimeoutExpired as exc:
         raise error_type(timeout_message) from exc
 
-    if process.returncode != 0:
-        stderr_text = stderr.decode(errors="ignore").strip()
+    if result.returncode != 0:
+        stderr_text = result.stderr.decode(errors="ignore").strip()
         raise error_type(
-            f"{binary_name} exited with code {process.returncode}: {stderr_text}"
+            f"{binary_name} exited with code {result.returncode}: {stderr_text}"
         )
 
-    return stdout
+    return result.stdout
 
 
 def _parse_probe_payload(payload: dict, video_path: Path) -> VideoMetadata:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import io
 import uuid
@@ -18,9 +19,12 @@ def _mp4_bytes(payload: bytes = b"fake mp4 video bytes") -> bytes:
     return payload
 
 
-async def test_create_upload_persists_metadata_and_does_not_process(
+async def test_create_upload_returns_initial_uploaded_status(
     client: AsyncClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """The POST response itself always reflects the immediate post-save
+    state ("uploaded") — background processing happens after this response
+    is already sent, so it can never affect what this endpoint returns."""
     monkeypatch.chdir(tmp_path)
     content = _mp4_bytes()
     files = {"file": ("demo.mp4", io.BytesIO(content), "video/mp4")}
@@ -69,7 +73,10 @@ async def test_get_upload_returns_full_metadata_with_checksum(
     assert body["mime_type"] == "video/mp4"
     assert body["file_size"] == len(content)
     assert body["checksum"] == hashlib.sha256(content).hexdigest()
-    assert body["status"] == "uploaded"
+    # Status is no longer pinned to "uploaded" now that the background
+    # pipeline actually runs (see test_pipeline.py for pipeline-specific
+    # assertions) — this test is about metadata persistence, not outcome.
+    assert body["status"] in {"uploaded", "processing", "completed", "failed"}
     assert "created_at" in body
 
 
@@ -132,3 +139,39 @@ async def test_get_upload_returns_404_for_unknown_id(client: AsyncClient) -> Non
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"
+
+
+async def test_list_uploads_returns_newest_first(
+    client: AsyncClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    ids = []
+    for name in ("first.mp4", "second.mp4"):
+        files = {"file": (name, io.BytesIO(_mp4_bytes()), "video/mp4")}
+        response = await client.post("/api/v1/uploads", files=files)
+        ids.append(response.json()["upload_id"])
+        # SQLite's server-side now() has whole-second resolution; without
+        # this, both uploads could land in the same second and "newest
+        # first" would be untestable (see UploadRepository.list_all).
+        await asyncio.sleep(1.05)
+
+    response = await client.get("/api/v1/uploads")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] >= 2
+    assert body["limit"] == 20
+    assert body["offset"] == 0
+    returned_ids = [item["upload_id"] for item in body["items"]]
+    # newest (second) upload must come before the older (first) one
+    assert returned_ids.index(ids[1]) < returned_ids.index(ids[0])
+
+
+async def test_list_uploads_respects_limit(client: AsyncClient) -> None:
+    response = await client.get("/api/v1/uploads?limit=1&offset=0")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["items"]) <= 1
+    assert body["limit"] == 1

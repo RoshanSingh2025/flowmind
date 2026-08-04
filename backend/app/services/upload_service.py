@@ -21,7 +21,13 @@ from app.core.exceptions import UnsupportedFileTypeError
 from app.core.logging import get_logger
 from app.models.upload import Upload, UploadStatus
 from app.repositories.upload_repository import UploadRepository
-from app.schemas.upload import UploadCreateResponse, UploadRead
+from app.schemas.upload import (
+    ResultsResponse,
+    UploadCreateResponse,
+    UploadListResponse,
+    UploadRead,
+)
+from app.utils.export import ExportableResults
 from app.utils.ffmpeg import (
     FFmpegError,
     FFprobeError,
@@ -157,6 +163,50 @@ class UploadService:
     ) -> UploadRead | None:
         upload = await self._repository.get_by_id(upload_id)
         return UploadRead.model_validate(upload) if upload else None
+
+    async def get_results(self, upload_id: uuid.UUID) -> ResultsResponse | None:
+        upload = await self._repository.get_by_id(upload_id)
+        if upload is None:
+            return None
+        return ResultsResponse(
+            upload_id=upload.id,
+            status=upload.status,
+            original_filename=upload.original_filename,
+            transcript=upload.transcript,
+            documentation=upload.documentation_markdown,
+            sop=upload.sop_markdown,
+            faq=upload.faq_markdown,
+            summary=upload.summary_markdown,
+            error=upload.processing_error,
+        )
+
+    async def list_uploads(
+        self,
+        *,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> UploadListResponse:
+        uploads = await self._repository.list_all(limit=limit, offset=offset)
+        total = await self._repository.count()
+        return UploadListResponse(
+            items=[UploadRead.model_validate(upload) for upload in uploads],
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
+
+    async def get_exportable_results(self, upload_id: uuid.UUID) -> ExportableResults | None:
+        upload = await self._repository.get_by_id(upload_id)
+        if upload is None:
+            return None
+        return ExportableResults(
+            original_filename=upload.original_filename,
+            summary=upload.summary_markdown,
+            documentation=upload.documentation_markdown,
+            sop=upload.sop_markdown,
+            faq=upload.faq_markdown,
+            transcript=upload.transcript,
+        )
 
     def _validate_file_type(
         self,

@@ -73,6 +73,16 @@ class Settings(BaseSettings):
     ffprobe_path: str = "ffprobe"
     ffmpeg_timeout: int = 30
 
+    # --- Transcription (faster-whisper, local, free) ---
+    whisper_model_size: str = "base"
+    whisper_device: str = "cpu"
+    whisper_compute_type: str = "int8"
+
+    # --- Document generation (Gemini API, free tier) ---
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-3.5-flash"
+    gemini_timeout: int = 60
+
     @field_validator("backend_cors_origins", mode="before")
     @classmethod
     def _split_cors_origins(cls, value: str | list[str]) -> list[str]:
