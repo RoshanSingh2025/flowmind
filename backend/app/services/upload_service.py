@@ -172,6 +172,7 @@ class UploadService:
             upload_id=upload.id,
             status=upload.status,
             original_filename=upload.original_filename,
+            thumbnail_path=upload.thumbnail_path,
             transcript=upload.transcript,
             documentation=upload.documentation_markdown,
             sop=upload.sop_markdown,
@@ -207,6 +208,17 @@ class UploadService:
             faq=upload.faq_markdown,
             transcript=upload.transcript,
         )
+
+    async def get_thumbnail_path(self, upload_id: uuid.UUID) -> Path | None:
+        """Returns the thumbnail file path for `upload_id` if one was
+        generated AND the file still exists on disk. Returns `None` if the
+        upload doesn't exist, metadata extraction failed (so no thumbnail
+        was ever generated), or the file has since been removed."""
+        upload = await self._repository.get_by_id(upload_id)
+        if upload is None or not upload.thumbnail_path:
+            return None
+        path = Path(upload.thumbnail_path)
+        return path if path.exists() else None
 
     def _validate_file_type(
         self,

@@ -101,22 +101,58 @@ class GeminiDocumentGenerationService:
             "generationConfig": {"temperature": 0.3},
         }
 
-        try:
-            async with httpx.AsyncClient(timeout=self._settings.gemini_timeout) as client:
-                response = await client.post(
-                    url,
-                    params={"key": self._settings.gemini_api_key},
-                    json=payload,
-                )
-        except httpx.HTTPError as exc:
-            raise DocumentGenerationError(f"Gemini API request failed: {exc}") from exc
-
-        if response.status_code != 200:
-            raise DocumentGenerationError(
-                f"Gemini API returned {response.status_code}: {response.text[:500]}"
-            )
-
+        response = await self._post_with_retry(url, payload)
         return self._parse_response(response.json())
+
+    async def _post_with_retry(self, url: str, payload: dict) -> httpx.Response:
+        """POST to Gemini, retrying on 429 (rate limited) / 503 (overloaded)
+        — both are common on the free tier under load and are expected to
+        resolve on their own within seconds, per Google's own error message
+        ("Spikes in demand are usually temporary"). Anything else (4xx
+        auth/validation errors, other 5xx) fails immediately — retrying
+        those would just waste time on an error that won't self-resolve.
+        """
+        import asyncio
+
+        max_attempts = 3
+        backoff_seconds = 2.0
+
+        last_response: httpx.Response | None = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                async with httpx.AsyncClient(timeout=self._settings.gemini_timeout) as client:
+                    response = await client.post(
+                        url,
+                        params={"key": self._settings.gemini_api_key},
+                        json=payload,
+                    )
+            except httpx.HTTPError as exc:
+                raise DocumentGenerationError(f"Gemini API request failed: {exc}") from exc
+
+            if response.status_code == 200:
+                return response
+
+            if response.status_code not in (429, 503) or attempt == max_attempts:
+                raise DocumentGenerationError(
+                    f"Gemini API returned {response.status_code}: {response.text[:500]}"
+                )
+
+            logger.warning(
+                "gemini_transient_error_retrying",
+                status_code=response.status_code,
+                attempt=attempt,
+                max_attempts=max_attempts,
+            )
+            last_response = response
+            await asyncio.sleep(backoff_seconds * attempt)
+
+        # Unreachable in practice (loop always returns or raises), but keeps
+        # the type checker satisfied and fails safely if it ever is reached.
+        assert last_response is not None
+        raise DocumentGenerationError(
+            f"Gemini API returned {last_response.status_code}: {last_response.text[:500]}"
+        )
 
     def _parse_response(self, body: dict) -> GeneratedDocuments:
         try:

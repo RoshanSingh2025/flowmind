@@ -41,9 +41,8 @@ export interface UploadRead {
   container_format: string | null;
 
   /**
-   * Raw server-side filesystem path — NOT a loadable URL. There is
-   * currently no static mount or route serving this file over HTTP, so this
-   * cannot be used directly as an `<img src>` yet.
+   * Raw server-side filesystem path — NOT a loadable URL on its own.
+   * Served over HTTP via `GET /api/v1/uploads/{upload_id}/thumbnail`.
    */
   thumbnail_path: string | null;
 
@@ -83,6 +82,7 @@ export interface ResultsResponse {
   upload_id: string;
   status: UploadStatus;
   original_filename: string;
+  thumbnail_path: string | null;
   transcript: string | null;
   documentation: string | null;
   sop: string | null;

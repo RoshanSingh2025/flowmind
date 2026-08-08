@@ -19,6 +19,41 @@ def _mp4_bytes(payload: bytes = b"fake mp4 video bytes") -> bytes:
     return payload
 
 
+def _real_mp4_bytes() -> bytes:
+    """A tiny (~1s) but genuinely valid MP4 with video+audio, generated via
+    ffmpeg. Needed wherever a test depends on real ffprobe/thumbnail
+    generation succeeding — `_mp4_bytes()`'s fake content can't produce
+    those (ffprobe correctly rejects it as not a video, so thumbnail
+    generation is silently skipped, same as any other malformed upload)."""
+    import subprocess
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=440:duration=1",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=c=blue:s=64x64:d=1",
+                "-c:v",
+                "libx264",
+                "-c:a",
+                "aac",
+                "-shortest",
+                tmp.name,
+            ],
+            capture_output=True,
+            check=True,
+        )
+        return Path(tmp.name).read_bytes()
+
+
 async def test_create_upload_returns_initial_uploaded_status(
     client: AsyncClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -175,3 +210,43 @@ async def test_list_uploads_respects_limit(client: AsyncClient) -> None:
     body = response.json()
     assert len(body["items"]) <= 1
     assert body["limit"] == 1
+
+
+async def test_get_thumbnail_returns_image_for_valid_video(
+    client: AsyncClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    files = {"file": ("real.mp4", io.BytesIO(_real_mp4_bytes()), "video/mp4")}
+
+    create_response = await client.post("/api/v1/uploads", files=files)
+    upload_id = create_response.json()["upload_id"]
+
+    response = await client.get(f"/api/v1/uploads/{upload_id}/thumbnail")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/jpeg"
+    assert len(response.content) > 0
+
+
+async def test_get_thumbnail_returns_404_when_extraction_failed(
+    client: AsyncClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fake (non-video) bytes mean ffprobe/thumbnail generation silently
+    fail during upload (see UploadService.create_upload) — no thumbnail_path
+    is ever set, so this must 404, not error."""
+    monkeypatch.chdir(tmp_path)
+    files = {"file": ("fake.mp4", io.BytesIO(_mp4_bytes()), "video/mp4")}
+
+    create_response = await client.post("/api/v1/uploads", files=files)
+    upload_id = create_response.json()["upload_id"]
+
+    response = await client.get(f"/api/v1/uploads/{upload_id}/thumbnail")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "not_found"
+
+
+async def test_get_thumbnail_returns_404_for_unknown_upload(client: AsyncClient) -> None:
+    response = await client.get(f"/api/v1/uploads/{uuid.uuid4()}/thumbnail")
+
+    assert response.status_code == 404

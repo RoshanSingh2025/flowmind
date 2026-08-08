@@ -54,10 +54,10 @@ class UploadRead(BaseModel):
     bitrate: int | None = None
     container_format: str | None = None
 
-    # Raw server-side filesystem path — NOT a loadable URL. There is
-    # currently no static mount or route that serves this file over HTTP;
-    # exposing the path here is harmless (useful for debugging/future wiring)
-    # but a frontend client cannot use this directly as an <img src>.
+    # Raw server-side filesystem path — NOT a loadable URL on its own.
+    # Served over HTTP via `GET /api/v1/uploads/{upload_id}/thumbnail`
+    # (see the endpoint of the same name); frontend clients should build
+    # that URL rather than trying to use this path directly.
     thumbnail_path: str | None = None
 
     # --- Pipeline outputs (populated by the background processing pipeline) ---
@@ -88,6 +88,7 @@ class ResultsResponse(BaseModel):
     upload_id: uuid.UUID
     status: UploadStatus
     original_filename: str
+    thumbnail_path: str | None
     transcript: str | None
     documentation: str | None
     sop: str | None

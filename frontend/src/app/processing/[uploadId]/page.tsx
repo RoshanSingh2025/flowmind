@@ -1,10 +1,12 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, Loader2, Workflow } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { useUploadStatus } from "@/hooks/use-upload-status";
+import { API_URL } from "@/lib/api-client";
 import { formatBytes } from "@/lib/utils";
 
 const PIPELINE_STEPS = [
@@ -119,15 +121,36 @@ export default function ProcessingPage() {
 
           {data && (
             <div className="glass-panel flex flex-col items-center gap-6 rounded-2xl p-8 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo/25 bg-indigo/[0.08]">
-                {data.status === "completed" ? (
-                  <CheckCircle2 className="h-6 w-6 text-teal" />
-                ) : data.status === "failed" ? (
-                  <AlertTriangle className="h-6 w-6 text-red-400" />
-                ) : (
-                  <Loader2 className="h-6 w-6 animate-spin text-indigo" />
-                )}
-              </div>
+              {data.thumbnail_path ? (
+                <div className="relative h-32 w-full max-w-xs">
+                  <Image
+                    src={`${API_URL}/api/v1/uploads/${uploadId}/thumbnail`}
+                    alt=""
+                    fill
+                    sizes="320px"
+                    className="rounded-xl border border-border/15 object-cover"
+                  />
+                  <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full border border-border/20 bg-background shadow-lg">
+                    {data.status === "completed" ? (
+                      <CheckCircle2 className="h-4 w-4 text-teal" />
+                    ) : data.status === "failed" ? (
+                      <AlertTriangle className="h-4 w-4 text-red-400" />
+                    ) : (
+                      <Loader2 className="h-4 w-4 animate-spin text-indigo" />
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo/25 bg-indigo/[0.08]">
+                  {data.status === "completed" ? (
+                    <CheckCircle2 className="h-6 w-6 text-teal" />
+                  ) : data.status === "failed" ? (
+                    <AlertTriangle className="h-6 w-6 text-red-400" />
+                  ) : (
+                    <Loader2 className="h-6 w-6 animate-spin text-indigo" />
+                  )}
+                </div>
+              )}
 
               <div>
                 <p className="max-w-xs truncate text-sm font-medium text-foreground">
@@ -187,13 +210,6 @@ export default function ProcessingPage() {
                   <StatBox label="File size" value={formatBytes(data.file_size)} />
                   <StatBox label="Uploaded" value={new Date(data.created_at).toLocaleString()} />
                 </div>
-              )}
-
-              {data.thumbnail_path && (
-                <p className="max-w-sm text-[11px] text-muted/50">
-                  A thumbnail was generated server-side, but there&apos;s no backend route yet to
-                  serve it as an image — not shown here until that exists.
-                </p>
               )}
             </div>
           )}

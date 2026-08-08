@@ -13,7 +13,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Query, UploadFile, status
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 
 from app.api.deps import SessionFactoryDep, SettingsDep, UploadServiceDep
 from app.core.exceptions import NotFoundError
@@ -89,6 +89,25 @@ async def get_results(upload_id: uuid.UUID, service: UploadServiceDep) -> Result
     if results is None:
         raise NotFoundError(f"Upload {upload_id} was not found")
     return results
+
+
+@router.get(
+    "/uploads/{upload_id}/thumbnail",
+    summary="Fetch the generated thumbnail image for an upload",
+    response_class=FileResponse,
+)
+async def get_thumbnail(upload_id: uuid.UUID, service: UploadServiceDep) -> FileResponse:
+    path = await service.get_thumbnail_path(upload_id)
+    if path is None:
+        raise NotFoundError(
+            f"No thumbnail available for upload {upload_id} "
+            "(either the upload doesn't exist, or metadata extraction failed)"
+        )
+    return FileResponse(
+        path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
 
 
 @router.get(
