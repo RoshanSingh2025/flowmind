@@ -79,6 +79,25 @@ async def get_upload(upload_id: uuid.UUID, service: UploadServiceDep) -> UploadR
     return upload
 
 
+@router.post(
+    "/uploads/{upload_id}/retry",
+    response_model=UploadRead,
+    summary="Retry processing for a failed upload",
+)
+async def retry_upload(
+    upload_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    service: UploadServiceDep,
+    settings: SettingsDep,
+    session_factory: SessionFactoryDep,
+) -> UploadRead:
+    upload = await service.retry_processing(upload_id)
+    if upload is None:
+        raise NotFoundError(f"Upload {upload_id} was not found")
+    background_tasks.add_task(run_pipeline_in_background, upload_id, settings, session_factory)
+    return upload
+
+
 @router.get(
     "/uploads/{upload_id}/results",
     response_model=ResultsResponse,

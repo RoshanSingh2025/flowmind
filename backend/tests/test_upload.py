@@ -250,3 +250,66 @@ async def test_get_thumbnail_returns_404_for_unknown_upload(client: AsyncClient)
     response = await client.get(f"/api/v1/uploads/{uuid.uuid4()}/thumbnail")
 
     assert response.status_code == 404
+
+
+async def test_retry_upload_resets_failed_upload_to_uploaded(
+    client: AsyncClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, db_session
+) -> None:
+    from app.models.upload import UploadStatus
+    from app.repositories.upload_repository import UploadRepository
+
+    monkeypatch.chdir(tmp_path)
+    files = {"file": ("demo.mp4", io.BytesIO(_mp4_bytes()), "video/mp4")}
+    create_response = await client.post("/api/v1/uploads", files=files)
+    upload_id = create_response.json()["upload_id"]
+
+    # Force it into a failed state directly, as if the pipeline had already run.
+    repository = UploadRepository(db_session)
+    upload = await repository.get_by_id(uuid.UUID(upload_id))
+    assert upload is not None
+    upload.status = UploadStatus.FAILED
+    upload.processing_error = "something went wrong"
+    await repository.add(upload)
+    await db_session.commit()
+
+    response = await client.post(f"/api/v1/uploads/{upload_id}/retry")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "uploaded"
+    assert body["processing_error"] is None
+
+
+async def test_retry_upload_rejects_non_failed_status(
+    client: AsyncClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, db_session
+) -> None:
+    from app.models.upload import UploadStatus
+    from app.repositories.upload_repository import UploadRepository
+
+    monkeypatch.chdir(tmp_path)
+    files = {"file": ("demo.mp4", io.BytesIO(_mp4_bytes()), "video/mp4")}
+    create_response = await client.post("/api/v1/uploads", files=files)
+    upload_id = create_response.json()["upload_id"]
+
+    # Fake bytes mean the background pipeline already ran and set this to
+    # "failed" by the time the POST above returns — force it to
+    # "completed" instead, so this test actually exercises the
+    # non-failed-status rejection path rather than accidentally hitting an
+    # already-failed upload (which retry would legitimately accept).
+    repository = UploadRepository(db_session)
+    upload = await repository.get_by_id(uuid.UUID(upload_id))
+    assert upload is not None
+    upload.status = UploadStatus.COMPLETED
+    await repository.add(upload)
+    await db_session.commit()
+
+    response = await client.post(f"/api/v1/uploads/{upload_id}/retry")
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "conflict"
+
+
+async def test_retry_upload_returns_404_for_unknown_upload(client: AsyncClient) -> None:
+    response = await client.post(f"/api/v1/uploads/{uuid.uuid4()}/retry")
+
+    assert response.status_code == 404

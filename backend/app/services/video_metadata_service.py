@@ -7,9 +7,13 @@ from app.utils.ffmpeg import (
     FFmpegError,
     FFprobeError,
     VideoMetadata,
-    generate_thumbnail as _generate_thumbnail_file,
-    probe_video as _probe_video_file,
     select_thumbnail_timestamp,
+)
+from app.utils.ffmpeg import (
+    generate_thumbnail as _generate_thumbnail_file,
+)
+from app.utils.ffmpeg import (
+    probe_video as _probe_video_file,
 )
 
 __all__ = [

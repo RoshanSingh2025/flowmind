@@ -17,7 +17,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 
 from app.core.config import Settings
-from app.core.exceptions import UnsupportedFileTypeError
+from app.core.exceptions import ConflictError, UnsupportedFileTypeError
 from app.core.logging import get_logger
 from app.models.upload import Upload, UploadStatus
 from app.repositories.upload_repository import UploadRepository
@@ -219,6 +219,36 @@ class UploadService:
             return None
         path = Path(upload.thumbnail_path)
         return path if path.exists() else None
+
+    async def retry_processing(self, upload_id: uuid.UUID) -> UploadRead | None:
+        """Resets a failed upload back to `uploaded` and returns it so the
+        caller can re-trigger the background pipeline. Only valid on
+        uploads currently in `failed` state — retrying an upload that's
+        still `processing` would race the in-flight pipeline run, and
+        retrying a `completed` one would discard real results for no
+        reason, so both raise `ConflictError` instead.
+        """
+        upload = await self._repository.get_by_id(upload_id)
+        if upload is None:
+            return None
+
+        if upload.status != UploadStatus.FAILED:
+            raise ConflictError(
+                f"Upload {upload_id} is '{upload.status.value}', not 'failed' — "
+                "only failed uploads can be retried."
+            )
+
+        upload.status = UploadStatus.UPLOADED
+        upload.processing_error = None
+        upload.transcript = None
+        upload.documentation_markdown = None
+        upload.sop_markdown = None
+        upload.faq_markdown = None
+        upload.summary_markdown = None
+
+        upload = await self._repository.add(upload)
+        logger.info("upload_retry_requested", upload_id=str(upload_id))
+        return UploadRead.model_validate(upload)
 
     def _validate_file_type(
         self,

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { useUploadStatus } from "@/hooks/use-upload-status";
+import { useRetryUpload } from "@/hooks/use-retry-upload";
+import { Button } from "@/components/ui/button";
 import { API_URL } from "@/lib/api-client";
 import { formatBytes } from "@/lib/utils";
 
@@ -36,6 +38,7 @@ export default function ProcessingPage() {
   const uploadId = params.uploadId;
 
   const { data, isLoading, isError, error } = useUploadStatus(uploadId);
+  const { mutate: retryUpload, isPending: isRetrying, error: retryError } = useRetryUpload(uploadId);
 
   const hasMetadata = data && (data.duration || data.width || data.codec);
 
@@ -190,9 +193,30 @@ export default function ProcessingPage() {
               )}
 
               {data.status === "failed" && (
-                <p className="max-w-sm text-xs text-red-400">
-                  {data.processing_error ?? "Processing failed for an unknown reason."}
-                </p>
+                <>
+                  <p className="max-w-sm text-xs text-red-400">
+                    {data.processing_error ?? "Processing failed for an unknown reason."}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => retryUpload()}
+                    disabled={isRetrying}
+                  >
+                    {isRetrying ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Retrying…
+                      </>
+                    ) : (
+                      "Retry processing"
+                    )}
+                  </Button>
+                  {retryError && (
+                    <p className="text-xs text-red-400">
+                      Couldn&apos;t retry: {retryError.message}
+                    </p>
+                  )}
+                </>
               )}
 
               {hasMetadata && (
