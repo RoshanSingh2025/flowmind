@@ -124,7 +124,11 @@ class GeminiDocumentGenerationService:
                 async with httpx.AsyncClient(timeout=self._settings.gemini_timeout) as client:
                     response = await client.post(
                         url,
-                        params={"key": self._settings.gemini_api_key},
+                        # Sent as a header rather than a `?key=` query param so
+                        # it never ends up in a URL — request logs, proxy
+                        # access logs, or an exception's string repr (e.g.
+                        # httpx.HTTPStatusError includes the request URL).
+                        headers={"x-goog-api-key": self._settings.gemini_api_key or ""},
                         json=payload,
                     )
             except httpx.HTTPError as exc:

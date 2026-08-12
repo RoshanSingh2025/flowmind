@@ -16,8 +16,14 @@ from __future__ import annotations
 from enum import StrEnum
 from functools import lru_cache
 
-from pydantic import AnyHttpUrl, Field, field_validator
+from pydantic import AnyHttpUrl, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Insecure placeholder values. Fine for local development (zero-setup), but
+# `Settings` refuses to start in production if either is still in effect —
+# see `_forbid_insecure_production_defaults` below.
+_INSECURE_DEV_SECRET_KEY = "dev-only-insecure-secret-key"
+_DEV_DATABASE_URL_PREFIX = "sqlite"
 
 
 class Environment(StrEnum):
@@ -40,7 +46,7 @@ class Settings(BaseSettings):
     project_name: str = "FlowMind"
     version: str = "0.1.0"
     api_v1_prefix: str = "/api/v1"
-    secret_key: str = Field(default="dev-only-insecure-secret-key")
+    secret_key: str = Field(default=_INSECURE_DEV_SECRET_KEY)
 
     # --- CORS ---
     backend_cors_origins: list[AnyHttpUrl] | list[str] = [
@@ -93,6 +99,38 @@ class Settings(BaseSettings):
                 if origin.strip()
             ]
         return value
+
+    @model_validator(mode="after")
+    def _forbid_insecure_production_defaults(self) -> Settings:
+        """Refuse to start in production with dev-only configuration.
+
+        Checked here (rather than only at request time) so a misconfigured
+        production deployment fails immediately at process startup — the
+        first place `Settings()` is constructed — instead of serving traffic
+        with an insecure secret key or against the local SQLite dev/test
+        database. Development/staging/test are unaffected.
+        """
+        if self.environment != Environment.PRODUCTION:
+            return self
+
+        problems: list[str] = []
+        if self.secret_key == _INSECURE_DEV_SECRET_KEY:
+            problems.append(
+                "SECRET_KEY is still set to the insecure development default"
+            )
+        if self.database_url.startswith(_DEV_DATABASE_URL_PREFIX):
+            problems.append(
+                "DATABASE_URL points at the local SQLite development/test database"
+            )
+
+        if problems:
+            # Deliberately omit the actual secret_key/database_url values —
+            # only names the problem, never the insecure value itself.
+            raise ValueError(
+                "Refusing to start with ENVIRONMENT=production: " + "; ".join(problems)
+            )
+
+        return self
 
     @property
     def is_production(self) -> bool:

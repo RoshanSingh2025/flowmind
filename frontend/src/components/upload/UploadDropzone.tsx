@@ -11,20 +11,10 @@ import { Progress } from "@/components/ui/progress";
 import { UPLOAD_ACCEPT_ATTRIBUTE, useUploadVideo } from "@/hooks/use-upload-video";
 import { cn } from "@/lib/utils";
 import { MAX_UPLOAD_SIZE_MB, type UploadCreateResponse } from "@/types/upload";
-
-function formatBytes(bytes: number): string {
-  if (bytes <= 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  let size = bytes;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex += 1;
-  }
-  return `${size.toFixed(size < 10 && unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
-}
+import { formatBytes } from "@/lib/utils";
 
 export interface UploadDropzoneProps {
+  /** Called when an upload finishes successfully. */
   onUploadSuccess?: (data: UploadCreateResponse, file: File) => void;
   className?: string;
 }
@@ -95,12 +85,24 @@ export function UploadDropzone({ onUploadSuccess, className }: UploadDropzonePro
 
   const isIdle = !isUploading && !isSuccess && !isError;
 
+  const statusAnnouncement = isUploading
+    ? `Uploading${selectedFile ? ` ${selectedFile.name}` : ""}, ${Math.round(progress?.percent ?? 0)} percent complete.`
+    : isSuccess
+      ? "Upload complete."
+      : isError
+        ? `Upload failed. ${errorMessage ?? ""}`
+        : "";
+
   return (
     <div className={cn("w-full", className)}>
+      <span role="status" aria-live="polite" className="sr-only">
+        {statusAnnouncement}
+      </span>
       <input
         ref={inputRef}
         type="file"
         accept={UPLOAD_ACCEPT_ATTRIBUTE}
+        aria-label="Choose a screen recording to upload"
         className="hidden"
         onChange={(event) => handleFiles(event.target.files)}
       />
@@ -191,8 +193,8 @@ export function UploadDropzone({ onUploadSuccess, className }: UploadDropzonePro
               <p className="mt-2 font-mono text-[11px] text-muted/60">{data.upload_id}</p>
             </div>
             <p className="max-w-xs text-xs text-muted/70">
-              Stored and ready. Processing (transcription, docs, and the knowledge base) is the
-              next pipeline stage — not wired up yet.
+              Stored and ready. Transcription, docs, and the knowledge base are generated next —
+              track progress on the Processing page.
             </p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleReset}>
@@ -219,7 +221,9 @@ export function UploadDropzone({ onUploadSuccess, className }: UploadDropzonePro
             </div>
             <div>
               <p className="text-sm font-medium text-foreground">Upload failed</p>
-              <p className="mt-1 max-w-xs text-xs text-muted">{errorMessage}</p>
+              <p role="alert" className="mt-1 max-w-xs text-xs text-muted">
+                {errorMessage}
+              </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleReset}>
               Try again

@@ -96,16 +96,27 @@ class PipelineService:
             upload.processing_error = None
 
         except (FFmpegError, TranscriptionError, DocumentGenerationError) as exc:
+            # Full detail (may include filesystem paths / upstream response
+            # bodies) goes to logs only. The public `/results` endpoint
+            # surfaces `processing_error` to any caller, so it must stay
+            # generic — never leak internal paths, stack traces, or
+            # upstream (e.g. Gemini) error bodies to API consumers.
             logger.exception("pipeline_failed", upload_id=str(upload_id), error=str(exc))
             upload.status = UploadStatus.FAILED
-            upload.processing_error = str(exc)
+            upload.processing_error = (
+                "Processing failed while preparing this video. Please try again; "
+                "if the problem persists, contact support."
+            )
 
         except Exception as exc:  # noqa: BLE001 - last-resort guard, this runs detached
             logger.exception(
                 "pipeline_failed_unexpected", upload_id=str(upload_id), error=str(exc)
             )
             upload.status = UploadStatus.FAILED
-            upload.processing_error = f"Unexpected error: {exc}"
+            upload.processing_error = (
+                "An unexpected error occurred while processing this video. "
+                "Please try again; if the problem persists, contact support."
+            )
 
         finally:
             audio_path.unlink(missing_ok=True)
