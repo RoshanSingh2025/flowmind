@@ -109,15 +109,9 @@ class UploadService:
         try:
             metadata = await probe_video(destination)
 
-            thumbnail_path = (
-                Path(self._settings.upload_dir)
-                / "thumbnails"
-                / f"{upload.id}.jpg"
-            )
+            thumbnail_path = Path(self._settings.upload_dir) / "thumbnails" / f"{upload.id}.jpg"
 
-            timestamp = select_thumbnail_timestamp(
-                metadata.duration or 0.0
-            )
+            timestamp = select_thumbnail_timestamp(metadata.duration or 0.0)
 
             await generate_thumbnail(
                 destination,

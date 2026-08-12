@@ -26,21 +26,15 @@ class BaseRepository(Generic[ModelT]):
         self.session = session
 
     async def get_by_id(self, entity_id: uuid.UUID) -> ModelT | None:
-        result = await self.session.execute(
-            select(self.model).where(self.model.id == entity_id)
-        )
+        result = await self.session.execute(select(self.model).where(self.model.id == entity_id))
         return result.scalar_one_or_none()
 
     async def list_all(self, *, limit: int = 100, offset: int = 0) -> list[ModelT]:
-        result = await self.session.execute(
-            select(self.model).limit(limit).offset(offset)
-        )
+        result = await self.session.execute(select(self.model).limit(limit).offset(offset))
         return list(result.scalars().all())
 
     async def count(self) -> int:
-        result = await self.session.execute(
-            select(func.count()).select_from(self.model)
-        )
+        result = await self.session.execute(select(func.count()).select_from(self.model))
         return int(result.scalar_one())
 
     async def add(self, entity: ModelT) -> ModelT:

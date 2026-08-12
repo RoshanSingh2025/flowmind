@@ -49,9 +49,7 @@ class Settings(BaseSettings):
     secret_key: str = Field(default=_INSECURE_DEV_SECRET_KEY)
 
     # --- CORS ---
-    backend_cors_origins: list[AnyHttpUrl] | list[str] = [
-        "http://localhost:3000"
-    ]
+    backend_cors_origins: list[AnyHttpUrl] | list[str] = ["http://localhost:3000"]
 
     # --- Database ---
     database_url: str = "sqlite+aiosqlite:///./flowmind.db"
@@ -93,11 +91,7 @@ class Settings(BaseSettings):
     @classmethod
     def _split_cors_origins(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str) and not value.startswith("["):
-            return [
-                origin.strip()
-                for origin in value.split(",")
-                if origin.strip()
-            ]
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
 
     @model_validator(mode="after")
@@ -115,13 +109,9 @@ class Settings(BaseSettings):
 
         problems: list[str] = []
         if self.secret_key == _INSECURE_DEV_SECRET_KEY:
-            problems.append(
-                "SECRET_KEY is still set to the insecure development default"
-            )
+            problems.append("SECRET_KEY is still set to the insecure development default")
         if self.database_url.startswith(_DEV_DATABASE_URL_PREFIX):
-            problems.append(
-                "DATABASE_URL points at the local SQLite development/test database"
-            )
+            problems.append("DATABASE_URL points at the local SQLite development/test database")
 
         if problems:
             # Deliberately omit the actual secret_key/database_url values —

@@ -59,6 +59,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     logger.info("application_shutdown")
 
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.project_name,

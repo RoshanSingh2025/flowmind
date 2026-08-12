@@ -69,9 +69,7 @@ class PipelineService:
         await self._session.commit()
         logger.info("pipeline_started", upload_id=str(upload_id))
 
-        audio_path = (
-            Path(self._settings.upload_dir) / "audio" / f"{upload_id}.wav"
-        )
+        audio_path = Path(self._settings.upload_dir) / "audio" / f"{upload_id}.wav"
 
         try:
             video_path = Path(self._settings.upload_dir) / upload.stored_filename
@@ -109,9 +107,7 @@ class PipelineService:
             )
 
         except Exception as exc:  # noqa: BLE001 - last-resort guard, this runs detached
-            logger.exception(
-                "pipeline_failed_unexpected", upload_id=str(upload_id), error=str(exc)
-            )
+            logger.exception("pipeline_failed_unexpected", upload_id=str(upload_id), error=str(exc))
             upload.status = UploadStatus.FAILED
             upload.processing_error = (
                 "An unexpected error occurred while processing this video. "

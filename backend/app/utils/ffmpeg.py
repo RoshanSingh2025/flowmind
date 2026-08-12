@@ -166,9 +166,7 @@ async def generate_thumbnail(video_path: Path, output_path: Path, timestamp: flo
     )
 
     if not output_path.exists():
-        raise FFmpegError(
-            f"ffmpeg reported success but no thumbnail was produced at {output_path}"
-        )
+        raise FFmpegError(f"ffmpeg reported success but no thumbnail was produced at {output_path}")
 
 
 async def extract_audio(video_path: Path, output_path: Path) -> None:
@@ -286,9 +284,7 @@ async def _run_subprocess(
 
     if result.returncode != 0:
         stderr_text = result.stderr.decode(errors="ignore").strip()
-        raise error_type(
-            f"{binary_name} exited with code {result.returncode}: {stderr_text}"
-        )
+        raise error_type(f"{binary_name} exited with code {result.returncode}: {stderr_text}")
 
     return result.stdout
 
