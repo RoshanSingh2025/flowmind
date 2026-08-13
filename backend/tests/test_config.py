@@ -57,10 +57,28 @@ def test_production_accepts_safe_configuration() -> None:
 
 
 def test_development_ignores_dev_defaults() -> None:
-    settings = Settings(_env_file=None, environment=Environment.DEVELOPMENT)
+    # Explicitly pass the default values rather than relying on `Settings`'
+    # field defaults: real environment variables (e.g. CI's `SECRET_KEY`)
+    # take precedence over field defaults regardless of `_env_file`, so
+    # asserting the guard is skipped for non-production requires pinning
+    # the inputs directly rather than depending on ambient env state.
+    settings = Settings(
+        _env_file=None,
+        environment=Environment.DEVELOPMENT,
+        secret_key="dev-only-insecure-secret-key",
+        database_url="sqlite+aiosqlite:///./flowmind.db",
+    )
     assert settings.secret_key == "dev-only-insecure-secret-key"
 
 
 def test_test_environment_ignores_dev_defaults() -> None:
-    settings = Settings(_env_file=None, environment=Environment.TEST)
+    # See note above: pin secret_key/database_url explicitly so this test
+    # doesn't depend on whatever DATABASE_URL/SECRET_KEY the environment
+    # (e.g. GitHub Actions) happens to export.
+    settings = Settings(
+        _env_file=None,
+        environment=Environment.TEST,
+        secret_key="dev-only-insecure-secret-key",
+        database_url="sqlite+aiosqlite:///:memory:",
+    )
     assert settings.database_url.startswith("sqlite")
