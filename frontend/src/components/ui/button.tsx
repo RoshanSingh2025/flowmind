@@ -14,6 +14,10 @@ const buttonVariants = cva(
         outline:
           "border border-border/20 bg-white/[0.02] text-foreground hover:bg-white/[0.06] hover:border-indigo/40",
         ghost: "text-muted hover:text-foreground hover:bg-white/[0.04]",
+        /* Claymorphism — reserved for the one or two most important
+           tactile actions per screen (Upload, Retry). See
+           `.clay-action` in globals.css for the puffy shadow recipe. */
+        clay: "clay-action text-background font-semibold",
       },
       size: {
         default: "h-11 px-6",

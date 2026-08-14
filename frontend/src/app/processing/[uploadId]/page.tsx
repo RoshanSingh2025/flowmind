@@ -26,8 +26,8 @@ function formatDuration(seconds: number): string {
 
 function StatBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border/15 bg-white/[0.03] p-4 text-left">
-      <p className="font-mono text-[10px] uppercase tracking-wider text-muted/70">{label}</p>
+    <div className="rounded-xl border border-teal/15 bg-white/[0.03] p-4 text-left">
+      <p className="font-mono text-[10px] uppercase tracking-wider text-teal/70">{label}</p>
       <p className="mt-1 text-sm text-foreground">{value}</p>
     </div>
   );
@@ -123,7 +123,13 @@ export default function ProcessingPage() {
           )}
 
           {data && (
-            <div className="glass-panel flex flex-col items-center gap-6 rounded-2xl p-8 text-center">
+            <div className="hud-panel relative flex flex-col items-center gap-6 overflow-hidden p-8 text-center">
+              {data.status === "processing" && (
+                <div
+                  aria-hidden="true"
+                  className="hud-scanline pointer-events-none absolute inset-0 -z-10 animate-hud-scan opacity-[0.1]"
+                />
+              )}
               {data.thumbnail_path ? (
                 <div className="relative h-32 w-full max-w-xs">
                   <Image
@@ -198,7 +204,7 @@ export default function ProcessingPage() {
                     {data.processing_error ?? "Processing failed for an unknown reason."}
                   </p>
                   <Button
-                    variant="outline"
+                    variant="clay"
                     size="sm"
                     onClick={() => retryUpload()}
                     disabled={isRetrying}

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, Bot, MessagesSquare, PlayCircle } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
@@ -126,6 +127,11 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden pb-24 pt-36 md:pb-32 md:pt-48">
       <div className="grid-overlay bg-mesh-glow absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]" />
+      {/* Aurora UI atmosphere — drifting color fields, hero-only. */}
+      <div
+        aria-hidden="true"
+        className="aurora-field absolute inset-[-10%] -z-10 animate-aurora [mask-image:radial-gradient(ellipse_65%_55%_at_50%_20%,black,transparent)]"
+      />
 
       <motion.div
         initial="hidden"
@@ -164,18 +170,20 @@ export function Hero() {
           variants={itemVariants}
           className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:gap-6"
         >
-          <Button size="lg" className="w-full sm:w-auto">
-  Get early access
-  <ArrowRight className="h-4 w-4" />
-</Button>
+          <Button size="lg" className="w-full sm:w-auto" asChild>
+            <Link href="/upload">
+              Get early access
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
 
-<a
-  href="#demo"
-  className="group inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-foreground"
->
-  <PlayCircle className="h-4 w-4 text-indigo transition-transform group-hover:scale-110" />
-  Watch a 90s demo
-</a>
+          <a
+            href="#demo"
+            className="group inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-foreground"
+          >
+            <PlayCircle className="h-4 w-4 text-indigo transition-transform group-hover:scale-110" />
+            Watch a 90s demo
+          </a>
         </motion.div>
 
         <motion.p variants={itemVariants} className="mt-4 text-xs text-muted/70">

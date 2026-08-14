@@ -89,7 +89,7 @@ export default function DashboardPage() {
                     ? `/results/${item.upload_id}`
                     : `/processing/${item.upload_id}`
                 }
-                className="glass-panel group flex flex-col gap-3 rounded-2xl p-5 text-left transition-colors hover:border-indigo/30"
+                className="bento-cell group flex flex-col gap-3 p-5 text-left"
               >
                 <div className="flex items-center justify-between">
                   {item.thumbnail_path ? (

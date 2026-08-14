@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, Workflow, X } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -96,9 +97,9 @@ export function Navbar() {
       className="fixed inset-x-0 top-4 z-50 mx-auto w-[92%] max-w-5xl"
     >
       <nav
-        className={`glass-panel flex items-center justify-between rounded-2xl px-5 py-3 transition-[box-shadow,border-color] duration-300 ${
+        className={`liquid-glass flex items-center justify-between rounded-2xl px-5 py-3 transition-[box-shadow,border-color] duration-300 ${
           isScrolled
-            ? "border-border/15 shadow-[0_8px_40px_-16px_hsl(222_60%_3%/0.7)]"
+            ? "border-border/20 shadow-[0_8px_40px_-16px_hsl(222_60%_3%/0.7)]"
             : ""
         }`}
       >
@@ -114,26 +115,32 @@ export function Navbar() {
 
         <div className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="group relative text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2"
-            >
-              {link.label}
-              <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-indigo to-teal transition-all duration-300 group-hover:w-full" />
-            </a>
-          ))}
+  <a
+    key={link.href}
+    href={link.href}
+    className="group relative text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2"
+  >
+    {link.label}
+    <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-indigo to-teal transition-all duration-300 group-hover:w-full" />
+  </a>
+))}
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" size="sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled
+            title="Sign in is coming soon"
+            aria-disabled="true"
+          >
             Sign in
           </Button>
 
           {/* If "primary" gives a TypeScript error,
               replace variant="primary" with variant="default". */}
-          <Button variant="primary" size="sm">
-            Get early access
+          <Button variant="primary" size="sm" asChild>
+            <Link href="/upload">Get early access</Link>
           </Button>
         </div>
 
@@ -143,7 +150,7 @@ export function Navbar() {
           aria-label="Toggle navigation menu"
           aria-expanded={isMobileNavOpen}
           aria-controls="mobile-nav-panel"
-          className="text-foreground md:hidden"
+          className="-m-2 p-2 text-foreground md:hidden"
         >
           {isMobileNavOpen ? (
             <X className="h-6 w-6" />
@@ -161,7 +168,7 @@ export function Navbar() {
             animate="show"
             exit="exit"
             variants={mobileMenuVariants}
-            className="glass-panel mt-2 overflow-hidden rounded-2xl md:hidden"
+            className="liquid-glass mt-2 overflow-hidden rounded-2xl md:hidden"
           >
             <div className="flex flex-col gap-1 p-4">
               {NAV_LINKS.map((link) => (
@@ -183,8 +190,11 @@ export function Navbar() {
                   variant="primary"
                   size="sm"
                   className="mt-2 w-full"
+                  asChild
                 >
-                  Get early access
+                  <Link href="/upload" onClick={closeMobileNav}>
+                    Get early access
+                  </Link>
                 </Button>
               </motion.div>
             </div>

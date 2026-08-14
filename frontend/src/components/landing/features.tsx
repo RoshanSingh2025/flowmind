@@ -3,8 +3,6 @@
 import { motion } from "framer-motion";
 import { BookOpen, Layers, MessagesSquare, ScanSearch, Sparkles, Workflow } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
 const FEATURES = [
   {
     icon: ScanSearch,
@@ -12,6 +10,16 @@ const FEATURES = [
     title: "Scene-aware understanding",
     description:
       "FlowMind segments a recording into meaningful steps — clicks, navigation, form fills — instead of treating it as one long undifferentiated clip.",
+    span: "md:col-span-2 md:row-span-1",
+  },
+  {
+    icon: Sparkles,
+    accent: "indigo" as const,
+    title: "An interactive knowledge base",
+    description:
+      "Every generated doc is indexed, so your team can ask a question in plain language and get the exact step back — the payoff of the whole pipeline.",
+    span: "md:col-span-2 md:row-span-2",
+    featured: true,
   },
   {
     icon: BookOpen,
@@ -19,6 +27,7 @@ const FEATURES = [
     title: "Docs that write themselves",
     description:
       "Every walkthrough becomes a structured how-to guide, complete with numbered steps and the screenshots that matter.",
+    span: "md:col-span-1 md:row-span-1",
   },
   {
     icon: MessagesSquare,
@@ -26,6 +35,7 @@ const FEATURES = [
     title: "FAQs, extracted not guessed",
     description:
       "Common questions are pulled from what people actually struggled with on screen, not invented from a template.",
+    span: "md:col-span-1 md:row-span-1",
   },
   {
     icon: Layers,
@@ -33,13 +43,7 @@ const FEATURES = [
     title: "Onboarding, assembled automatically",
     description:
       "Stitch multiple recordings into a single onboarding path new hires can follow at their own pace.",
-  },
-  {
-    icon: Sparkles,
-    accent: "indigo" as const,
-    title: "An interactive knowledge base",
-    description:
-      "Every generated doc is indexed, so your team can ask a question in plain language and get the exact step back.",
+    span: "md:col-span-1 md:row-span-1",
   },
   {
     icon: Workflow,
@@ -47,6 +51,7 @@ const FEATURES = [
     title: "Fits your existing workflow",
     description:
       "Drop in a recording from any tool you already use. No new recorder to install, no workflow to relearn.",
+    span: "md:col-span-3 md:row-span-1",
   },
 ];
 
@@ -63,7 +68,10 @@ export function Features() {
           </h2>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {/* Bento Grid — deliberately uneven cell sizes to establish
+            hierarchy: the knowledge-base feature (the actual payoff)
+            gets the largest, tallest cell. */}
+        <div className="grid auto-rows-[minmax(0,1fr)] gap-5 md:grid-cols-4">
           {FEATURES.map((feature, index) => (
             <motion.div
               key={feature.title}
@@ -71,24 +79,42 @@ export function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.5, delay: (index % 3) * 0.08 }}
+              className={feature.span}
             >
-              <Card className="h-full">
-                <CardHeader>
-                  <div
-                    className={`mb-2 flex h-10 w-10 items-center justify-center rounded-lg ${
-                      feature.accent === "indigo"
-                        ? "bg-indigo/10 text-indigo"
-                        : "bg-teal/10 text-teal"
-                    }`}
-                  >
-                    <feature.icon className="h-5 w-5" strokeWidth={1.75} />
-                  </div>
-                  <CardTitle>{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>{feature.description}</CardDescription>
-                </CardContent>
-              </Card>
+              <div
+                className={`bento-cell glass-panel-hover flex h-full flex-col p-6 ${
+                  feature.featured ? "justify-between" : ""
+                }`}
+              >
+                <div
+                  className={`mb-4 flex items-center justify-center rounded-xl ${
+                    feature.featured ? "h-12 w-12" : "h-10 w-10"
+                  } ${
+                    feature.accent === "indigo"
+                      ? "bg-indigo/10 text-indigo"
+                      : "bg-teal/10 text-teal"
+                  }`}
+                >
+                  <feature.icon
+                    className={feature.featured ? "h-6 w-6" : "h-5 w-5"}
+                    strokeWidth={1.75}
+                  />
+                </div>
+                <h3
+                  className={`font-display font-semibold text-foreground ${
+                    feature.featured ? "text-2xl" : "text-lg"
+                  }`}
+                >
+                  {feature.title}
+                </h3>
+                <p
+                  className={`mt-2 leading-relaxed text-muted ${
+                    feature.featured ? "text-sm md:text-base" : "text-sm"
+                  }`}
+                >
+                  {feature.description}
+                </p>
+              </div>
             </motion.div>
           ))}
         </div>

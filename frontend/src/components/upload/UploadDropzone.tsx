@@ -124,18 +124,18 @@ export function UploadDropzone({ onUploadSuccess, className }: UploadDropzonePro
             onDragLeave={onDragLeave}
             onDragOver={onDragOver}
             className={cn(
-              "flex h-72 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo/50",
+              "neu-surface flex h-72 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-transparent transition-[box-shadow,border-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo/50",
               isDragActive
-                ? "border-indigo/60 bg-indigo/[0.06]"
-                : "border-border/20 bg-white/[0.02] hover:border-indigo/35 hover:bg-white/[0.03]"
+                ? "neu-surface-active border-indigo/40"
+                : "hover:border-indigo/20"
             )}
           >
             <motion.div
               animate={{ y: isDragActive ? -4 : 0, scale: isDragActive ? 1.08 : 1 }}
               transition={{ duration: 0.2 }}
-              className="flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo/25 bg-indigo/[0.08]"
+              className="clay-action flex h-14 w-14 items-center justify-center rounded-2xl"
             >
-              <Upload className="h-6 w-6 text-indigo" strokeWidth={1.75} />
+              <Upload className="h-6 w-6 text-background" strokeWidth={2} />
             </motion.div>
             <p className="text-sm font-medium text-foreground">
               {isDragActive ? "Drop it right here" : "Drop a screen recording, or click to browse"}
@@ -225,7 +225,7 @@ export function UploadDropzone({ onUploadSuccess, className }: UploadDropzonePro
                 {errorMessage}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleReset}>
+            <Button variant="clay" size="sm" onClick={handleReset}>
               Try again
             </Button>
           </motion.div>

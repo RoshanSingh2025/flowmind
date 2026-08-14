@@ -1,9 +1,25 @@
 import { Workflow } from "lucide-react";
 
-const FOOTER_LINKS = {
-  Product: ["Features", "Architecture", "Demo", "Changelog"],
-  Company: ["About", "Careers", "Blog"],
-  Resources: ["Docs", "API status", "Support"],
+// Only links with a real destination are rendered as clickable — the rest
+// (no page/section exists for them yet) render as plain text so they don't
+// look interactive when they aren't.
+const FOOTER_LINKS: Record<string, { label: string; href: string | null }[]> = {
+  Product: [
+    { label: "Features", href: "#features" },
+    { label: "Architecture", href: "#architecture" },
+    { label: "Demo", href: "#demo" },
+    { label: "Changelog", href: null },
+  ],
+  Company: [
+    { label: "About", href: null },
+    { label: "Careers", href: null },
+    { label: "Blog", href: null },
+  ],
+  Resources: [
+    { label: "Docs", href: null },
+    { label: "API status", href: null },
+    { label: "Support", href: null },
+  ],
 };
 
 export function Footer() {
@@ -28,13 +44,22 @@ export function Footer() {
             <div key={heading}>
               <h4 className="font-display text-sm font-semibold text-foreground">{heading}</h4>
               <ul className="mt-4 space-y-2.5">
-                {links.map((link) => (
-                  <li key={link}>
-                    <a href="#" className="text-sm text-muted transition-colors hover:text-foreground">
-                      {link}
-                    </a>
-                  </li>
-                ))}
+                {links.map((link) =>
+                  link.href ? (
+                    <li key={link.label}>
+  <a
+    href={link.href}
+    className="text-sm text-muted transition-colors hover:text-foreground"
+  >
+    {link.label}
+  </a>
+</li>
+                  ) : (
+                    <li key={link.label}>
+                      <span className="text-sm text-muted/50">{link.label} · coming soon</span>
+                    </li>
+                  )
+                )}
               </ul>
             </div>
           ))}
@@ -43,12 +68,8 @@ export function Footer() {
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-border/10 pt-8 text-xs text-muted md:flex-row">
           <span>&copy; {new Date().getFullYear()} FlowMind. All rights reserved.</span>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-foreground">
-              Privacy
-            </a>
-            <a href="#" className="hover:text-foreground">
-              Terms
-            </a>
+            <span className="text-muted/50">Privacy · coming soon</span>
+            <span className="text-muted/50">Terms · coming soon</span>
           </div>
         </div>
       </div>

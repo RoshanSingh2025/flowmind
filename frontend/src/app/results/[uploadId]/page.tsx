@@ -29,7 +29,7 @@ type TabId = "summary" | "documentation" | "sop" | "faq" | "transcript";
 
 function Prose({ content }: { content: string }) {
   return (
-    <div className="prose prose-invert prose-sm max-w-none prose-headings:font-display prose-a:text-indigo prose-code:text-teal">
+    <div className="prose prose-invert prose-sm max-w-none prose-headings:font-display prose-headings:tracking-tight prose-h1:text-2xl prose-h2:text-xl prose-h2:mt-8 prose-p:leading-relaxed prose-a:text-indigo prose-code:text-teal prose-strong:text-foreground">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );
@@ -181,9 +181,12 @@ export default function ResultsPage() {
           {data && data.status === "completed" && availableTabs.length > 0 && (
             <div className="glass-panel rounded-2xl p-2">
               <div className="flex flex-col gap-3 border-b border-border/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {data.original_filename}
-                </p>
+                <div>
+                  <span className="editorial-kicker text-indigo/70">Document</span>
+                  <p className="mt-0.5 truncate text-sm font-medium text-foreground">
+                    {data.original_filename}
+                  </p>
+                </div>
                 <div className="flex shrink-0 gap-2">
                   <Button variant="outline" size="sm" asChild>
                     <a href={`${API_URL}/api/v1/uploads/${uploadId}/export/markdown`} download>
@@ -198,28 +201,38 @@ export default function ResultsPage() {
                 </div>
               </div>
 
+              {/* Premium Swiss-style tabs — underline indicator rather
+                  than a filled pill, to keep the emphasis on the
+                  document content rather than the chrome. */}
               <div
-                className="flex gap-1 overflow-x-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="flex gap-5 overflow-x-auto border-b border-border/10 px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               >
                 {availableTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    aria-current={effectiveActiveTab === tab.id ? "true" : undefined}
+                    className={`relative shrink-0 whitespace-nowrap py-3 font-mono text-[11px] uppercase tracking-wider transition-colors ${
                       effectiveActiveTab === tab.id
-                        ? "bg-white/[0.06] text-foreground"
+                        ? "text-foreground"
                         : "text-muted hover:text-foreground"
                     }`}
                   >
                     {tab.label}
+                    {effectiveActiveTab === tab.id && (
+                      <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-gradient-to-r from-indigo to-teal" />
+                    )}
                   </button>
                 ))}
               </div>
 
               <div className="p-4">
                 {activeContent ? (
-                  <div className="rounded-xl border border-border/10 bg-white/[0.02] p-6">
-                    <div className="mb-3 flex justify-end">
+                  <div className="editorial-surface p-6 md:p-10">
+                    <div className="mb-6 flex items-center justify-between border-b border-border/10 pb-4">
+                      <span className="editorial-kicker text-muted">
+                        {availableTabs.find((t) => t.id === effectiveActiveTab)?.label}
+                      </span>
                       <CopyButton text={activeContent} />
                     </div>
                     <Prose content={activeContent} />

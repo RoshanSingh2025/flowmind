@@ -54,11 +54,21 @@ const config: Config = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        aurora: {
+          "0%, 100%": { transform: "translate(0%, 0%) rotate(0deg)" },
+          "50%": { transform: "translate(3%, -2%) rotate(4deg)" },
+        },
+        "hud-scan": {
+          "0%": { backgroundPosition: "0% 0%" },
+          "100%": { backgroundPosition: "0% 200%" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.6s ease-out forwards",
         "pulse-slow": "pulse-slow 3s ease-in-out infinite",
         shimmer: "shimmer 3s linear infinite",
+        aurora: "aurora 18s ease-in-out infinite",
+        "hud-scan": "hud-scan 3s linear infinite",
       },
     },
   },
