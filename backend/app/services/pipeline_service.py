@@ -69,7 +69,9 @@ class PipelineService:
         await self._session.commit()
         logger.info("pipeline_started", upload_id=str(upload_id))
 
-        audio_path = Path(self._settings.upload_dir) / "audio" / f"{upload_id}.wav"
+        audio_path = (
+            Path(self._settings.upload_dir) / "audio" / f"{upload_id}.wav"
+        )
 
         try:
             video_path = Path(self._settings.upload_dir) / upload.stored_filename
@@ -82,10 +84,21 @@ class PipelineService:
                 "pipeline_transcribed", upload_id=str(upload_id), transcript_length=len(transcript)
             )
 
+            # Persist the transcript as soon as it exists, in its own
+            # commit — rather than waiting until after document generation
+            # too. Previously a Gemini failure right after a successful
+            # transcription meant the transcript was never written (the
+            # exception handler below runs before the later
+            # `upload.transcript = transcript` assignment ever executes),
+            # silently discarding real work.
+            upload.transcript = transcript
+            await self._repository.add(upload)
+            await self._session.commit()
+            logger.info("pipeline_transcript_persisted", upload_id=str(upload_id))
+
             documents = await self._document_service.generate(transcript)
             logger.info("pipeline_documents_generated", upload_id=str(upload_id))
 
-            upload.transcript = transcript
             upload.documentation_markdown = documents.documentation
             upload.sop_markdown = documents.sop
             upload.faq_markdown = documents.faq
@@ -107,7 +120,9 @@ class PipelineService:
             )
 
         except Exception as exc:  # noqa: BLE001 - last-resort guard, this runs detached
-            logger.exception("pipeline_failed_unexpected", upload_id=str(upload_id), error=str(exc))
+            logger.exception(
+                "pipeline_failed_unexpected", upload_id=str(upload_id), error=str(exc)
+            )
             upload.status = UploadStatus.FAILED
             upload.processing_error = (
                 "An unexpected error occurred while processing this video. "
